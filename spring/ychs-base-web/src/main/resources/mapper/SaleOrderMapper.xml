@@ -1,0 +1,102 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ychs.web.sale_order.mapper.SaleOrderMapper">
+    <select id="getList" resultType="com.ychs.web.sale_order.entity.SaleOrder">
+        select pa.*,g.goods_name,s.supplier_name,u.nick_name from sale_order as pa
+        inner join  goods as g on g.goods_id = pa.goods_id
+        inner join supplier as s on s.supplier_id = g.supplier_id
+        inner join sys_user  as u on u.user_id = pa.sale_user
+        where 1=1
+        <if test="parm.goodsName != null and parm.goodsName !=''">
+            and g.goods_name LIKE CONCAT('%',#{parm.goodsName},'%')
+        </if>
+        <if test="parm.supplierName != null and parm.supplierName !=''">
+            and s.supplier_name LIKE CONCAT('%',#{parm.supplierName},'%')
+        </if>
+        <if test="parm.nickName != null and parm.nickName !=''">
+            and u.nick_name LIKE CONCAT('%',#{parm.nickName},'%')
+        </if>
+        order by pa.create_time desc
+    </select>
+    <update id="subStock">
+        update sale_order set sale_price = sale_price - #{parm.salePrice},sale_count = sale_count - #{parm.saleCount}
+        where order_id =#{parm.orderId}
+          and sale_count >= #{parm.saleCount}
+    </update>
+    <select id="getEchartTotal" resultType="com.ychs.web.sale_order.entity.EcharTotalVo">
+        SELECT
+            DATE_FORMAT(create_time, '%Y-%m') AS order_month,
+            COUNT(*) AS total_orders
+        FROM
+            sale_order
+        GROUP BY
+            order_month
+        ORDER BY
+            order_month asc
+        limit 10
+    </select>
+
+    <select id="getHotGoods" resultType="com.ychs.web.home.entity.EchartsItem">
+        select g.goods_name as name ,SUM(sale_count) as value from sale_order as s
+                                                                       inner join goods as g on  g.goods_id = s.goods_id
+        GROUP BY g.goods_id,g.goods_name
+        ORDER BY value  desc
+    </select>
+
+    <select id="getBestSale" resultType="com.ychs.web.home.entity.EchartsItem">
+        select u.nick_name as name, SUM(sale_count) as value from sale_order as s
+                                                                      inner join sys_user as u on u.user_id = s.sale_user
+        GROUP BY s.sale_user
+        ORDER BY value DESC
+        limit 10
+    </select>
+
+    <select id="getSaleTotal" resultType="com.ychs.web.sale_order.entity.SaleOrderTotal">
+        SELECT
+        g.goods_id,
+        g.goods_name,
+        DATE_FORMAT(so.create_time, '%Y-%m') AS sale_month,
+        SUM(so.sale_price) AS sale_price,
+        SUM(so.sale_count) AS sale_count
+        FROM
+        goods g
+        JOIN
+        sale_order so ON g.goods_id = so.goods_id
+        <where>
+            <if test="parm.startTime != null and parm.startTime !=''">
+                AND DATE_FORMAT(so.create_time, '%Y-%m') <![CDATA[ >= ]]> #{parm.startTime}
+            </if>
+            <if test="parm.endTime != null and parm.endTime !=''">
+                AND DATE_FORMAT(so.create_time, '%Y-%m') <![CDATA[ <= ]]> #{parm.endTime}
+            </if>
+        </where>
+
+        GROUP BY
+        g.goods_id, g.goods_name, sale_month
+        ORDER BY
+        g.goods_id, sale_month
+        DESC
+    </select>
+    <!--统计每个人的业绩-->
+    <select id="getEverySaleTotal" parameterType="com.ychs.web.sale_order.entity.EveryParm" resultType="com.ychs.web.sale_order.entity.UserSaleTotal">
+        SELECT u.user_id, u.nick_name, DATE_FORMAT(s.create_time, '%Y-%m') AS sale_month, SUM(s.sale_price) AS sale_price
+        FROM sys_user u
+        inner JOIN sale_order s ON u.user_id = s.sale_user
+        <where>
+            <if test="parm.userId != null and parm.userId !=''">
+                and u.user_id =#{parm.userId}
+            </if>
+            <if test="parm.startTime != null and parm.startTime !=''">
+                AND DATE_FORMAT(s.create_time, '%Y-%m') <![CDATA[ >= ]]> #{parm.startTime}
+            </if>
+            <if test="parm.endTime != null and parm.endTime !=''">
+                AND DATE_FORMAT(s.create_time, '%Y-%m') <![CDATA[ <= ]]> #{parm.endTime}
+            </if>
+        </where>
+
+        GROUP BY u.user_id, u.nick_name, DATE_FORMAT(s.create_time, '%Y-%m')
+        ORDER BY  sale_month
+        DESC
+    </select>
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ychs.web.purchase_returning.mapper.PurchaseReturningMapper">
+    <select id="getList" resultType="com.ychs.web.purchase_returning.entity.PurchaseReturning">
+        select pa.*,g.goods_name,s.supplier_name from purchase_returning as pa
+        inner join  goods as g on g.goods_id = pa.goods_id
+        inner join supplier as s on s.supplier_id = pa.supplier_id
+        where 1=1
+        <if test="goodsName != null and goodsName !=''">
+            and g.goods_name LIKE CONCAT('%',#{goodsName},'%')
+        </if>
+        <if test="supplierName != null and supplierName !=''">
+            and s.supplier_name LIKE CONCAT('%',#{supplierName},'%')
+        </if>
+        order by pa.create_time desc
+    </select>
+</mapper>

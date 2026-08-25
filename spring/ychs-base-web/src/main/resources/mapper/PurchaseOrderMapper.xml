@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ychs.web.purchase_order.mapper.PurchaseOrderMapper">
+    <select id="getList" resultType="com.ychs.web.purchase_order.entity.PurchaseOrder">
+        select pa.*,g.goods_name,s.supplier_name from purchase_order as pa
+        inner join  goods as g on g.goods_id = pa.goods_id
+        inner join supplier as s on s.supplier_id = pa.supplier_id
+        where 1=1
+        <if test="goodsName != null and goodsName !=''">
+            and g.goods_name LIKE CONCAT('%',#{goodsName},'%')
+        </if>
+        <if test="supplierName != null and supplierName !=''">
+            and s.supplier_name LIKE CONCAT('%',#{supplierName},'%')
+        </if>
+        order by pa.create_time desc
+    </select>
+    <update id="subStock">
+        update purchase_order set purchase_count = purchase_count - #{parm.goodsCount}
+        where order_id =#{parm.orderId}
+          and purchase_count >= #{parm.goodsCount}
+    </update>
+    <select id="getPurchaseTotal" resultType="com.ychs.web.purchase_order.entity.PurchaseTotal">
+        SELECT
+        DATE_FORMAT(po.create_time, '%Y-%m') AS purchase_month,
+        g.goods_id,
+        g.goods_name,
+        SUM(po.purchase_count) AS purchase_count,
+        SUM(po.purchase_price) AS purchase_price
+        FROM
+        goods g
+        INNER JOIN purchase_order po ON g.goods_id = po.goods_id
+        <where>
+            <if test="parm.startTime != null and parm.startTime !=''">
+                AND DATE_FORMAT(po.create_time, '%Y-%m') <![CDATA[ >= ]]> #{parm.startTime}
+            </if>
+            <if test="parm.endTime != null and parm.endTime !=''">
+                AND DATE_FORMAT(po.create_time, '%Y-%m') <![CDATA[ <= ]]> #{parm.endTime}
+            </if>
+        </where>
+
+        GROUP BY
+        purchase_month,
+        g.goods_id,
+        g.goods_name
+        ORDER BY
+        purchase_month
+        DESC
+    </select>
+</mapper>

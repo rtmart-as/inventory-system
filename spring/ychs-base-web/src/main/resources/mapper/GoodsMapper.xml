@@ -1,0 +1,34 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ychs.web.goods.mapper.GoodsMapper">
+    <select id="getList" resultType="com.ychs.web.goods.entity.Goods">
+        select g.*,s.supplier_name from goods as g
+        left join supplier as s  on g.supplier_id = s.supplier_id
+        where 1=1
+        <if test="parm.goodsName != null and parm.goodsName !=''">
+            and g.goods_name LIKE CONCAT('%',#{parm.goodsName},'%')
+        </if>
+        <if test="parm.supplierName != null and parm.supplierName !=''">
+            and s.supplier_name LIKE CONCAT('%',#{parm.supplierName},'%')
+        </if>
+        <if test="parm.goodsCode != null and parm.goodsCode !=''">
+            and g.goods_code LIKE CONCAT('%',#{parm.goodsCode},'%')
+        </if>
+        order by g.order_num desc
+    </select>
+    <update id="addStock">
+        update goods set stock = stock + #{parm.goodsCount}
+        where goods_id =#{parm.goodsId}
+    </update>
+    <update id="subStock">
+        update goods set stock = stock - #{parm.goodsCount}
+        where goods_id =#{parm.goodsId}
+          and stock >= #{parm.goodsCount}
+    </update>
+    <select id="getWarnCount" resultType="integer">
+        SELECT COUNT(goods_id) AS less_count
+        FROM goods
+        WHERE stock &lt; stock_warn
+    </select>
+</mapper>
